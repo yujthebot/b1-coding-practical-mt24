@@ -103,11 +103,18 @@ class ClosedLoop:
         positions = np.zeros((T, 2))
         actions = np.zeros(T)
         self.plant.reset_state()
+        # the controller keeps the previous error, so it has to start
+        # clean like the plant does, or a second run inherits e[-1]
+        self.controller.reset()
 
         for t in range(T):
             positions[t] = self.plant.get_position()
             observation_t = self.plant.get_depth()
-            # Call your controller here
+
+            # controller gets the reference and the measured depth and
+            # forms the error itself, so the e = r - y definition lives
+            # in one place
+            actions[t] = self.controller(mission.reference[t], observation_t)
             self.plant.transition(actions[t], disturbances[t])
 
         return Trajectory(positions)
