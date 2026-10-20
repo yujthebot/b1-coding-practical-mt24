@@ -11,4 +11,6 @@ class controller:
         self.error_prev = error
         control_signal = self.Kp * error + self.Kd * derivative
         return control_signal
+    def reset(self):
+        self.error_prev = 0.0
 
