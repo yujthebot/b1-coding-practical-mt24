@@ -114,7 +114,7 @@ class ClosedLoop:
             # controller gets the reference and the measured depth and
             # forms the error itself, so the e = r - y definition lives
             # in one place
-            actions[t] = self.controller(mission.reference[t], observation_t)
+            actions[t] = self.controller.control(mission.reference[t], observation_t)
             self.plant.transition(actions[t], disturbances[t])
 
         return Trajectory(positions)
