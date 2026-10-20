@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from .terrain import generate_reference_and_limits
 
@@ -75,8 +76,17 @@ class Mission:
 
     @classmethod
     def from_csv(cls, file_name: str):
-        # You are required to implement this method
-        pass
+        # builds a Mission from a csv with the columns reference,
+        # cave_height, cave_depth (same layout write_mission_to_csv gives)
+        df = pd.read_csv(file_name)
+
+        # to_numpy so the fields are plain arrays like random_mission
+        # gives, not pandas series (where [t] would look up by label)
+        return cls(
+            reference=df['reference'].to_numpy(),
+            cave_height=df['cave_height'].to_numpy(),
+            cave_depth=df['cave_depth'].to_numpy(),
+        )
 
 
 class ClosedLoop:
@@ -93,11 +103,18 @@ class ClosedLoop:
         positions = np.zeros((T, 2))
         actions = np.zeros(T)
         self.plant.reset_state()
+        # the controller keeps the previous error, so it has to start
+        # clean like the plant does, or a second run inherits e[-1]
+        self.controller.reset()
 
         for t in range(T):
             positions[t] = self.plant.get_position()
             observation_t = self.plant.get_depth()
-            
+
+            # controller gets the reference and the measured depth and
+            # forms the error itself, so the e = r - y definition lives
+            # in one place
+            actions[t] = self.controller.control(mission.reference[t], observation_t)
             self.plant.transition(actions[t], disturbances[t])
 
         return Trajectory(positions)
